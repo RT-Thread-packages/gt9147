@@ -36,7 +36,7 @@ RT-Thread online packages  --->
 
 ### 使用软件包
 
-MPU6xxx 软件包初始化函数如下所示：
+gt9147 软件包初始化函数如下所示：
 
 ```
 int rt_hw_gt9147_init(const char *name, struct rt_touch_config *cfg)
