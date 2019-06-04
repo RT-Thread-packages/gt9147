@@ -5,7 +5,7 @@
 ### 初始化函数
 
 ```{.c}
-struct gt9147_device *gt9147_init(const char *dev_name, rt_uint8_t param)
+static struct gt9147_device *gt9147_init(const char *dev_name, rt_uint8_t param)
 ```
 
 使用指定的通信设备 I2C 初始化 gt9147 ，并返回控制句柄。
@@ -20,7 +20,7 @@ struct gt9147_device *gt9147_init(const char *dev_name, rt_uint8_t param)
 ### 反初始化函数
 
 ```{.c}
-void gt9147_deinit(struct gt9147_device *dev)
+static void gt9147_deinit(struct gt9147_device *dev)
 ```
 
 释放 gt9147 设备占据的内存空间
@@ -34,7 +34,7 @@ void gt9147_deinit(struct gt9147_device *dev)
 ### 获取产品 ID
 
 ```{.c}
-rt_err_t gt9147_get_product_id(struct gt9147_device *dev, rt_uint8_t read_len, rt_uint8_t *read_data);
+static rt_err_t gt9147_get_product_id(struct gt9147_device *dev, rt_uint8_t read_len, rt_uint8_t *read_data);
 ```
 
 获取挂载在总线上的 gt9147 的 ID 号
@@ -50,7 +50,7 @@ rt_err_t gt9147_get_product_id(struct gt9147_device *dev, rt_uint8_t read_len, r
 
 ### 获取 gt9147 配置信息
 ```{.c}
-rt_err_t gt9147_get_info(struct gt9147_device *dev, struct gt9147_info *info);
+static rt_err_t gt9147_get_info(struct gt9147_device *dev, struct gt9147_info *info);
 ```
 
 | 参数              | 描述                                |
@@ -63,7 +63,7 @@ rt_err_t gt9147_get_info(struct gt9147_device *dev, struct gt9147_info *info);
 
 ### 软复位 gt9147
 ```{.c}
-rt_err_t gt9147_soft_reset(struct gt9147_device *dev);
+static rt_err_t gt9147_soft_reset(struct gt9147_device *dev);
 ```
 | 参数              | 描述                                |
 |:------------------|:------------------------------------|
@@ -74,7 +74,7 @@ rt_err_t gt9147_soft_reset(struct gt9147_device *dev);
 
 ### 设定参数
 ```{.c}
-rt_err_t gt9147_control(struct gt9147_device *dev, void *cmd, void *data);
+static rt_err_t gt9147_control(struct gt9147_device *dev, void *cmd, void *data);
 ```
 为挂载上的 gt9147 设备设定参数
 | 参数              | 描述                                |
@@ -109,7 +109,7 @@ CMD_INT_CHECK_HIGH     //高电平查询
 ### 读取触摸芯片坐标信息   
 
 ```{.c}
-rt_err_t gt9147_read_point(struct gt9147_device *dev, touch_message_t msg);
+static rt_err_t gt9147_read_point(struct gt9147_device *dev, touch_message_t msg);
 ```
 
 | 参数     | 描述                                    |
