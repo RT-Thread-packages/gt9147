@@ -46,6 +46,12 @@ static const rt_uint8_t GT9147_CFG_TBL[] =
     0XFF, 0XFF, 0XFF, 0XFF,
 };
 
+struct gt9147_device
+{
+    rt_device_t bus;
+    rt_uint8_t i2c_addr;
+};
+
 static rt_err_t gt9147_write_reg(struct gt9147_device *dev, rt_uint8_t write_len, rt_uint8_t *write_data)
 {
     rt_int8_t res = 0;
@@ -165,12 +171,12 @@ static rt_err_t gt9147_control(struct gt9147_device *dev, void *cmd, void *data)
 
     switch(choose_cmd)
     {
-    case CMD_CONFIG_VERSION: /* set version */
+    case RT_TOUCH_CTRL_GET_ID: /* set version */
     {
         config[2] = *(rt_uint8_t *)data;
         break;
     }
-    case CMD_CONFIG_X_OUTPUT_MAX: /* set x range */
+    case RT_TOUCH_CTRL_SET_X_RANGE: /* set x range */
     {
         rt_uint16_t x_ran;
 
@@ -180,7 +186,7 @@ static rt_err_t gt9147_control(struct gt9147_device *dev, void *cmd, void *data)
 
         break;
     }
-    case CMD_CONFIG_Y_OUTPUT_MAX: /* set y range */
+    case RT_TOUCH_CTRL_SET_Y_RANGE: /* set y range */
     {
         rt_uint16_t y_ran;
 
@@ -190,32 +196,24 @@ static rt_err_t gt9147_control(struct gt9147_device *dev, void *cmd, void *data)
 
         break;
     }
-    case CMD_CONFIG_X_TO_Y: /* change x y */
+    case RT_TOUCH_CTRL_SET_X_TO_Y: /* change x y */
     {
         config[8] = config[8] ^= (1 << 3);
         break;
     }
-    case CMD_CONFIG_INT_TYPE: /* change int trig type */
+    case RT_TOUCH_CTRL_SET_MODE: /* change int trig type */
     {
         rt_uint8_t trig_type;
         trig_type = *(rt_uint8_t *)data;
 
         switch (trig_type)
         {
-        case CMD_INT_RISING_TRIG:
+        case RT_TOUCH_MODE_INT:
             config[8] &= 0xFC;
             break;
-        case CMD_INT_FALLING_TRIG:
-            config[8] &= 0xFC;
-            config[8] |= 0x01;
-            break;
-        case CMD_INT_CHECK_LOW:
+        case RT_TOUCH_MODE_POLLING:
             config[8] &= 0xFC;
             config[8] |= 0x02;
-            break;
-        case CMD_INT_CHECK_HIGH:
-            config[8] &= 0xFC;
-            config[8] |= 0x03;
             break;
         default:
             break;
@@ -276,7 +274,7 @@ static rt_err_t gt9147_control(struct gt9147_device *dev, void *cmd, void *data)
 
 }
 
-static rt_err_t gt9147_read_point(struct gt9147_device *dev, touch_message_t msg)
+static rt_err_t gt9147_read_point(struct gt9147_device *dev, struct rt_touch_data *msg)
 {
     rt_uint8_t read_status = 0;
     rt_uint8_t touch_num = 0;
@@ -312,27 +310,27 @@ static rt_err_t gt9147_read_point(struct gt9147_device *dev, touch_message_t msg
         if(s_tp_down1)
         {
             s_tp_down1 = 0;
-            msg->event = TOUCH_EVENT_UP;
+            msg->event = RT_TOUCH_EVENT_UP;
         }
         else
         {
-            msg->event = TOUCH_EVENT_NONE;
+            msg->event = RT_TOUCH_EVENT_NONE;
         }
     }
     else
     {
-        msg->id = read_buf[1] & 0x0f;
-        msg->x = ((rt_uint16_t)read_buf[3] << 8) | read_buf[2];
-        msg->y = ((rt_uint16_t)read_buf[5] << 8) | read_buf[4];
+        msg->track_id = read_buf[1] & 0x0f;
+        msg->x_coordinate = ((rt_uint16_t)read_buf[3] << 8) | read_buf[2];
+        msg->y_coordinate = ((rt_uint16_t)read_buf[5] << 8) | read_buf[4];
         msg->width = ((rt_uint16_t)read_buf[7] << 8) | read_buf[6];
 
         if(s_tp_down1 == 1)
         {
-            msg->event = TOUCH_EVENT_MOVE;
+            msg->event = RT_TOUCH_EVENT_MOVE;
         }
         else
         {
-            msg->event = TOUCH_EVENT_DOWN;
+            msg->event = RT_TOUCH_EVENT_DOWN;
             s_tp_down1 = 1;
         }
     }
@@ -348,7 +346,7 @@ exit_work_func:
 }
 
 
-static rt_err_t gt9147_get_info(struct gt9147_device *dev, struct gt9147_info *info)
+static rt_err_t gt9147_get_info(struct gt9147_device *dev, struct rt_touch_info *info)
 {
     rt_uint8_t opr_buf[7] = {0};
     rt_uint8_t cmd_buf[2];
@@ -363,11 +361,8 @@ static rt_err_t gt9147_get_info(struct gt9147_device *dev, struct gt9147_info *i
         return RT_ERROR;
     }
 
-    info->version = opr_buf[0];
-    info->x_range = (opr_buf[2] << 8) + opr_buf[1];
-    info->y_range = (opr_buf[4] << 8) + opr_buf[3];
-    info->touch_num = opr_buf[5] & 0x0f;
-    info->trig_type = opr_buf[6] & 0x03;
+    info->range_x = (opr_buf[2] << 8) + opr_buf[1];
+    info->range_y = (opr_buf[4] << 8) + opr_buf[3];
 
     return RT_EOK;
 
@@ -458,25 +453,25 @@ static RT_UNUSED void gt9147_deinit(struct gt9147_device *dev)
     rt_free(dev);
 }
 
-/* docking to rt-thread touch framework section */
+/* connect to rt-thread touch framework section */
 
 static struct gt9147_device *gt9147_dev;
 
-static rt_err_t _gt9147_init(struct rt_touch_intf *intf)
+static rt_err_t frame_gt9147_init(struct rt_touch_config *intf)
 {
-    struct device_data *appli_data = (struct device_data *)(intf->user_data);
+    rt_uint8_t i2c_address = *(rt_uint8_t *)intf->intf.user_data;
 
-    rt_pin_mode(appli_data->rst_pin, PIN_MODE_OUTPUT);
-    rt_pin_mode(appli_data->int_pin, PIN_MODE_OUTPUT);
+    rt_pin_mode(intf->rst_pin, PIN_MODE_OUTPUT);
+    rt_pin_mode(intf->irq_pin.pin, PIN_MODE_OUTPUT);
 
-    rt_pin_write(appli_data->rst_pin, PIN_LOW);
+    rt_pin_write(intf->rst_pin, PIN_LOW);
     rt_thread_mdelay(10);
-    rt_pin_write(appli_data->rst_pin, PIN_HIGH);
+    rt_pin_write(intf->rst_pin, PIN_HIGH);
     rt_thread_mdelay(10);
-    rt_pin_mode(appli_data->int_pin, PIN_MODE_INPUT);
+    rt_pin_mode(intf->irq_pin.pin, PIN_MODE_INPUT);
     rt_thread_mdelay(100);
 
-    gt9147_dev = gt9147_init(intf->dev_name, appli_data->i2c_addr);
+    gt9147_dev = gt9147_init(intf->intf.dev_name, i2c_address);
 
     if (gt9147_dev == RT_NULL)
     {
@@ -488,31 +483,25 @@ static rt_err_t _gt9147_init(struct rt_touch_intf *intf)
     return RT_EOK;
 }
 
-static rt_size_t _gt9147_get_data(rt_touch_t touch, rt_off_t pos, struct rt_touch_data *data, rt_size_t len)
+static rt_size_t frame_gt9147_fetch_data(struct rt_touch_device *touch, rt_off_t pos, void *buf, rt_size_t len)
 {
-    touch_message_t msg;
+    RT_ASSERT(buf);
 
-    gt9147_read_point(gt9147_dev, msg);
+    struct rt_touch_data *msg;
+    msg = (struct rt_touch_data *)buf;
 
-    data->event = msg->event;
-    data->track_id = msg->id;
-    data->timestamp = rt_touch_get_ts();
-    data->width = msg->width;
-    data->x_coordinate = msg->x;
-    data->y_doordinate = msg->y;
+    if (gt9147_read_point(gt9147_dev, msg) != RT_EOK)
+    {
+        LOG_I("rt touch read point failed\n");
+        return -1;
+    }
+
+    msg->timestamp = rt_touch_get_ts();
 
     return 1;
 }
 
-
-static rt_size_t _gt9147_fetch_data(struct rt_touch_device *touch, rt_off_t pos, void *buf, rt_size_t len)
-{
-    RT_ASSERT(buf);
-
-    return _gt9147_get_data(touch, pos, buf, len);
-}
-
-static rt_err_t _gt9147_control(struct rt_touch_device *touch, int cmd, void *args)
+static rt_err_t frame_gt9147_control(struct rt_touch_device *touch, int cmd, void *args)
 {
     rt_err_t result = RT_EOK;
 
@@ -530,30 +519,21 @@ static rt_err_t _gt9147_control(struct rt_touch_device *touch, int cmd, void *ar
     }
     case RT_TOUCH_CTRL_SET_MODE:
     {
-        rt_uint8_t cmd = CMD_CONFIG_INT_TYPE;
         gt9147_control(gt9147_dev, &cmd, args);
-        break;
-    }
-    case RT_TOUCH_CTRL_SET_POWER:
-    {
-        result = RT_EOK;
         break;
     }
     case RT_TOUCH_CTRL_SET_X_RANGE:
     {
-        rt_uint8_t cmd = CMD_CONFIG_X_OUTPUT_MAX;
         gt9147_control(gt9147_dev, &cmd, args);
         break;
     }
     case RT_TOUCH_CTRL_SET_Y_RANGE:
     {
-        rt_uint8_t cmd = CMD_CONFIG_Y_OUTPUT_MAX;
         gt9147_control(gt9147_dev, &cmd, args);
         break;
     }
     case RT_TOUCH_CTRL_SET_X_TO_Y:
     {
-        rt_uint8_t cmd = CMD_CONFIG_X_TO_Y;
         gt9147_control(gt9147_dev, &cmd, args);
         break;
     }
@@ -568,8 +548,8 @@ static rt_err_t _gt9147_control(struct rt_touch_device *touch, int cmd, void *ar
 
 static struct rt_touch_ops touch_ops =
 {
-    .touch_readpoint = _gt9147_fetch_data,
-    .touch_control = _gt9147_control,
+    .touch_readpoint = frame_gt9147_fetch_data,
+    .touch_control = frame_gt9147_control,
 };
 
 int rt_hw_gt9147_init(const char *name, struct rt_touch_config *cfg)
@@ -586,8 +566,6 @@ int rt_hw_gt9147_init(const char *name, struct rt_touch_config *cfg)
     touch_device->info.type = RT_TOUCH_TYPE_CAPACITANCE;
     touch_device->info.vendor = RT_TOUCH_VENDOR_GT;
     touch_device->info.intf_type = RT_TOUCH_INTF_I2C;
-    touch_device->info.range_x = 480;
-    touch_device->info.range_y = 272;
 
     rt_memcpy(&touch_device->config, cfg, sizeof(struct rt_touch_config));
     touch_device->ops = &touch_ops;
@@ -600,7 +578,7 @@ int rt_hw_gt9147_init(const char *name, struct rt_touch_config *cfg)
         goto __exit;
     }
 
-    result = _gt9147_init(&cfg->intf);
+    result = frame_gt9147_init(cfg);
 
     if (result != RT_EOK)
     {

@@ -56,17 +56,13 @@ int rt_hw_gt9147_init(const char *name, struct rt_touch_config *cfg)
 int touch_init(void)
 {
     struct rt_touch_config config;
-    struct device_data use_data;
-    
-    use_data.i2c_addr = 0x5d;
-    use_data.int_pin = I2C_INT;
-    use_data.rst_pin = I2C_RST;
+    rt_uint8_t use_data = 0x5D;
 
     config.intf.dev_name = "i2c1";
     config.intf.user_data = &use_data;
-    config.intf.type = RT_TOUCH_INTF_I2C;
     config.irq_pin.pin  = I2C_INT;
     config.irq_pin.mode = PIN_MODE_INPUT_PULLDOWN;
+    config.rst_pin = I2C_RST;
     config.mode = RT_TOUCH_MODE_INT;
 
     rt_hw_gt9147_init("gt", &config);

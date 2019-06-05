@@ -38,12 +38,11 @@ static int gt9147_test()
 
     rt_device_control(dev, RT_TOUCH_CTRL_GET_INFO, id);
 
-    rt_kprintf("type = %d ", (*(struct rt_touch_info*)id).type);
-    rt_kprintf("vendor = %d ", (*(struct rt_touch_info*)id).vendor);
-    rt_kprintf("interface = %d ", (*(struct rt_touch_info*)id).intf_type);
     rt_kprintf("range_x = %d ", (*(struct rt_touch_info*)id).range_x);
     rt_kprintf("range_y = %d \n", (*(struct rt_touch_info*)id).range_y);
 
+    rt_device_close(dev);
+    
     return 0;
 }
 MSH_CMD_EXPORT(gt9147_test, gt9147 sensor test function);
