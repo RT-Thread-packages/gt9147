@@ -2,7 +2,7 @@
 
 ## 简介
 
-gt9147 软件包提供了使用触摸芯片 gt9147 基本功能，并且本软件包已经对接到了 Touch 框架，通过 Touch 框架，开发者可以快速的将此传感器驱动起来。
+gt9147 软件包提供了使用触摸芯片 gt9147 基本功能，并且本软件包已经对接到了 Touch 框架，通过 Touch 框架，开发者可以快速的将此触摸芯片驱动起来。
 ## 支持情况
 
 | 包含设备           | 触摸芯片 |  
@@ -11,7 +11,7 @@ gt9147 软件包提供了使用触摸芯片 gt9147 基本功能，并且本软�
 | IIC              | √        | 
 | **工作模式**     |          |     
 | 中断             | √        | 
-| 轮询             |          |        
+| 轮询             |   √       |        
 
 ## 使用说明
 
@@ -49,25 +49,24 @@ int rt_hw_gt9147_init(const char *name, struct rt_touch_config *cfg)
 
 #### 初始化示例
 
-```{.c}
-int touch_init(void)
+```.c
+int rt_hw_gt9147_port(void)
 {
     struct rt_touch_config config;
-    rt_uint8_t i2c_address = 0x5D;
-
-    config.intf.dev_name = "i2c1";
-    config.intf.user_data = &i2c_address;
+    rt_uint8_t rst;
+    
+    rst = I2C_RST;
+    config.dev_name = "i2c1";
     config.irq_pin.pin  = I2C_INT;
     config.irq_pin.mode = PIN_MODE_INPUT_PULLDOWN;
-    config.rst_pin.pin = I2C_RST;
-    config.mode = RT_DEVICE_FLAG_INT_RX;
+    config.user_data = &rst;
 
     rt_hw_gt9147_init("gt", &config);
 
     return 0;
 }
 
-INIT_ENV_EXPORT(touch_init);
+INIT_ENV_EXPORT(rt_hw_gt9147_port);
 ```
 
 ## 注意事项
