@@ -63,7 +63,7 @@ static rt_err_t gt9147_write_reg(struct rt_i2c_client *dev, rt_uint8_t write_len
     }
     else
     {
-        res = -RT_ERROR;
+        res = RT_ERROR;
     }
 
     return res;
@@ -91,7 +91,7 @@ static rt_err_t gt9147_read_regs(struct rt_i2c_client *dev, rt_uint8_t *cmd_buf,
     }
     else
     {
-        res = -RT_ERROR;
+        res = RT_ERROR;
     }
 
     return res;
@@ -168,7 +168,7 @@ static rt_err_t gt9147_control(struct rt_touch_device *device, int cmd, void *da
 {
     if (cmd == RT_TOUCH_CTRL_GET_ID)
     {
-        return gt9147_get_product_id(gt9147_client, 4, data);
+        return gt9147_get_product_id(gt9147_client, 6, data);
     }
 
     if (cmd == RT_TOUCH_CTRL_GET_INFO)
@@ -348,19 +348,19 @@ static rt_size_t gt9147_read_point(struct rt_touch_device *touch, void *buf, rt_
     {
         LOG_D("read point failed\n");
         read_num = 0;
-        goto exit;
+        goto exit_;
     }
 
     if (point_status == 0)             /* no data */
     {
         read_num = 0;
-        goto exit;
+        goto exit_;
     }
 
     if ((point_status & 0x80) == 0)    /* data is not ready */
     {
         read_num = 0;
-        goto exit;
+        goto exit_;
     }
 
     touch_num = point_status & 0x0f;  /* get point num */
@@ -368,7 +368,7 @@ static rt_size_t gt9147_read_point(struct rt_touch_device *touch, void *buf, rt_
     if (touch_num > GT9147_MAX_TOUCH) /* point num is not correct */
     {
         read_num = 0;
-        goto exit;
+        goto exit_;
     }
 
     cmd[0] = (rt_uint8_t)((GT9147_POINT1_REG >> 8) & 0xFF);
@@ -379,7 +379,7 @@ static rt_size_t gt9147_read_point(struct rt_touch_device *touch, void *buf, rt_
     {
         LOG_D("read point failed\n");
         read_num = 0;
-        goto exit;
+        goto exit_;
     }
 
     if (pre_touch > touch_num)                                       /* point up */
@@ -431,12 +431,11 @@ static rt_size_t gt9147_read_point(struct rt_touch_device *touch, void *buf, rt_
 
     pre_touch = touch_num;
 
-exit:
+exit_:
     write_buf[0] = (rt_uint8_t)((GT9147_READ_STATUS >> 8) & 0xFF);
     write_buf[1] = (rt_uint8_t)(GT9147_READ_STATUS & 0xFF);
     write_buf[2] = 0x00;
     gt9147_write_reg(gt9147_client, 3, write_buf);
-
     return read_num;
 }
 

@@ -55,9 +55,9 @@ int rt_hw_gt9147_port(void)
     struct rt_touch_config config;
     rt_uint8_t rst;
     
-    rst = I2C_RST;
+    rst = GT9147_RST_PIN;
     config.dev_name = "i2c1";
-    config.irq_pin.pin  = I2C_INT;
+    config.irq_pin.pin  = GT9147_IRQ_PIN;
     config.irq_pin.mode = PIN_MODE_INPUT_PULLDOWN;
     config.user_data = &rst;
 
@@ -65,7 +65,6 @@ int rt_hw_gt9147_port(void)
 
     return 0;
 }
-
 INIT_ENV_EXPORT(rt_hw_gt9147_port);
 ```
 

@@ -45,12 +45,14 @@ static void gt9147_entry(void *parameter)
                 }
             }
         }
+        rt_device_control(dev, RT_TOUCH_CTRL_ENABLE_INT, RT_NULL);
     }
 }
 
 static rt_err_t rx_callback(rt_device_t dev, rt_size_t size)
 {
     rt_sem_release(gt9147_sem);
+    rt_device_control(dev, RT_TOUCH_CTRL_DISABLE_INT, RT_NULL);
     return 0;
 }
 
@@ -58,13 +60,14 @@ static rt_err_t rx_callback(rt_device_t dev, rt_size_t size)
 static int gt9147_sample(void)
 {
     void *id;
-    rt_uint16_t x = 480;
+    rt_uint16_t x = 800;
+    rt_uint16_t y = 720;
 
-    dev = rt_device_find("touch_gt");
+    dev = rt_device_find("gt");
 
     if (dev == RT_NULL)
     {
-        rt_kprintf("Can't find device:%s\n", "touch_gt");
+        rt_kprintf("can't find device:%s\n", "gt");
         return -1;
     }
 
@@ -74,18 +77,18 @@ static int gt9147_sample(void)
         return -1;
     }
 
+    id = rt_malloc(sizeof(rt_uint8_t) * 8);
     rt_device_control(dev, RT_TOUCH_CTRL_GET_ID, id);
     rt_uint8_t * read_id = (rt_uint8_t *)id;
     rt_kprintf("id = %d %d %d %d \n", read_id[0] - '0', read_id[1] - '0', read_id[2] - '0', read_id[3] - '0');
 
-    id  = &x;
-    rt_device_control(dev, RT_TOUCH_CTRL_SET_X_RANGE, id);
+    rt_device_control(dev, RT_TOUCH_CTRL_SET_X_RANGE, &x);  /* if possible you can set your x y coordinate*/
+    rt_device_control(dev, RT_TOUCH_CTRL_SET_Y_RANGE, &y);
     rt_device_control(dev, RT_TOUCH_CTRL_GET_INFO, id);
-
     rt_kprintf("range_x = %d \n", (*(struct rt_touch_info*)id).range_x);
     rt_kprintf("range_y = %d \n", (*(struct rt_touch_info*)id).range_y);
     rt_kprintf("point_num = %d \n", (*(struct rt_touch_info*)id).point_num);
-
+    rt_free(id);
     rt_device_set_rx_indicate(dev, rx_callback);
     gt9147_sem = rt_sem_create("dsem", 0, RT_IPC_FLAG_FIFO);
 
@@ -96,15 +99,15 @@ static int gt9147_sample(void)
     }
 
     gt9147_thread = rt_thread_create("thread1",
-                            gt9147_entry,
-                            RT_NULL,
-                            THREAD_STACK_SIZE,
-                            THREAD_PRIORITY,
-                            THREAD_TIMESLICE);
+                                     gt9147_entry,
+                                     RT_NULL,
+                                     THREAD_STACK_SIZE,
+                                     THREAD_PRIORITY,
+                                     THREAD_TIMESLICE);
 
     if (gt9147_thread != RT_NULL)
         rt_thread_startup(gt9147_thread);
-    
+
     return 0;
 }
 
