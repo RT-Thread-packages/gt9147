@@ -49,7 +49,6 @@ static const rt_uint8_t GT9147_CFG_TBL[] =
 
 static rt_err_t gt9147_write_reg(struct rt_i2c_client *dev, rt_uint8_t write_len, rt_uint8_t *write_data)
 {
-    rt_int8_t res = 0;
     struct rt_i2c_msg msgs;
 
     msgs.addr  = dev->client_addr;
@@ -59,20 +58,16 @@ static rt_err_t gt9147_write_reg(struct rt_i2c_client *dev, rt_uint8_t write_len
 
     if (rt_i2c_transfer(dev->bus, &msgs, 1) == 1)
     {
-        res = RT_EOK;
+        return RT_EOK;
     }
     else
     {
-        res = RT_ERROR;
+        return -RT_ERROR;
     }
-
-    return res;
 }
 
 static rt_err_t gt9147_read_regs(struct rt_i2c_client *dev, rt_uint8_t *cmd_buf, rt_uint8_t cmd_len, rt_uint8_t read_len, rt_uint8_t *read_buf)
 {
-    rt_int8_t res = 0;
-
     struct rt_i2c_msg msgs[2];
 
     msgs[0].addr  = dev->client_addr;
@@ -87,14 +82,12 @@ static rt_err_t gt9147_read_regs(struct rt_i2c_client *dev, rt_uint8_t *cmd_buf,
 
     if (rt_i2c_transfer(dev->bus, msgs, 2) == 2)
     {
-        res = RT_EOK;
+        return RT_EOK;
     }
     else
     {
-        res = RT_ERROR;
+        return -RT_ERROR;
     }
-
-    return res;
 }
 
 /**
@@ -118,7 +111,7 @@ static rt_err_t gt9147_get_product_id(struct rt_i2c_client *dev, rt_uint8_t read
     {
         LOG_D("read id failed \n");
 
-        return RT_ERROR;
+        return -RT_ERROR;
     }
 
     return RT_EOK;
@@ -136,7 +129,7 @@ static rt_err_t gt9147_get_info(struct rt_i2c_client *dev, struct rt_touch_info 
     {
         LOG_D("read id failed \n");
 
-        return RT_ERROR;
+        return -RT_ERROR;
     }
 
     info->range_x = (opr_buf[2] << 8) + opr_buf[1];
@@ -158,7 +151,7 @@ static rt_err_t gt9147_soft_reset(struct rt_i2c_client *dev)
     if (gt9147_write_reg(dev, 3, buf) != RT_EOK)
     {
         LOG_D("soft reset gt9147 failed\n");
-        return RT_ERROR;
+        return -RT_ERROR;
     }
 
     return RT_EOK;
@@ -185,7 +178,7 @@ static rt_err_t gt9147_control(struct rt_touch_device *device, int cmd, void *da
     if (config == RT_NULL)
     {
         LOG_D("malloc config memory failed\n");
-        return RT_ERROR;
+        return -RT_ERROR;
     }
 
     config[0] = (rt_uint8_t)((GT9147_CONFIG >> 8) & 0xFF); /* config reg */
@@ -248,7 +241,7 @@ static rt_err_t gt9147_control(struct rt_touch_device *device, int cmd, void *da
     if (gt9147_write_reg(gt9147_client, sizeof(GT9147_CFG_TBL) + GTP_ADDR_LENGTH, config) != RT_EOK)  /* send config */
     {
         LOG_D("send config failed\n");
-        return RT_ERROR;
+        return -RT_ERROR;
     }
 
     buf[0] = (rt_uint8_t)((GT9147_CHECK_SUM >> 8) & 0xFF);
@@ -452,7 +445,7 @@ int rt_hw_gt9147_init(const char *name, struct rt_touch_config *cfg)
     touch_device = (rt_touch_t)rt_calloc(1, sizeof(struct rt_touch_device));
 
     if (touch_device == RT_NULL)
-        return RT_ERROR;
+        return -RT_ERROR;
 
     /* hardware init */
     rt_pin_mode(*(rt_uint8_t *)cfg->user_data, PIN_MODE_OUTPUT);
@@ -472,13 +465,13 @@ int rt_hw_gt9147_init(const char *name, struct rt_touch_config *cfg)
     if (gt9147_client->bus == RT_NULL)
     {
         LOG_E("Can't find device\n");
-        return RT_ERROR;
+        return -RT_ERROR;
     }
 
     if (rt_device_open((rt_device_t)gt9147_client->bus, RT_DEVICE_FLAG_RDWR) != RT_EOK)
     {
         LOG_E("open device failed\n");
-        return RT_ERROR;
+        return -RT_ERROR;
     }
 
     gt9147_client->client_addr = GT9147_ADDRESS_HIGH;
