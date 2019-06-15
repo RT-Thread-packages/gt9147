@@ -64,7 +64,7 @@ int gt9147_sample(const char *name, rt_uint16_t x, rt_uint16_t y)
     dev = rt_device_find(name);
     if (dev == RT_NULL)
     {
-        rt_kprintf("can't find device:%s\n", "gt");
+        rt_kprintf("can't find device:%s\n", name);
         return -1;
     }
 
