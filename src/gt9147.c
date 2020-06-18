@@ -24,7 +24,7 @@
 static struct rt_i2c_client *gt9147_client;
 
 /* hardware section */
-static const rt_uint8_t GT9147_CFG_TBL[] =
+static rt_uint8_t GT9147_CFG_TBL[] =
 {
     0X00, 0XE0, 0X01, 0X10, 0X01, 0X05, 0X3C, 0X00, 0X02, 0X08,
     0X1E, 0X08, 0X50, 0X3C, 0X0F, 0X05, 0X00, 0X00, 0XFF, 0X67,
@@ -196,6 +196,9 @@ static rt_err_t gt9147_control(struct rt_touch_device *device, int cmd, void *da
         config[4] = (rt_uint8_t)(x_ran >> 8);
         config[3] = (rt_uint8_t)(x_ran & 0xff);
 
+        GT9147_CFG_TBL[2] = config[4];
+        GT9147_CFG_TBL[1] = config[3];
+
         break;
     }
     case RT_TOUCH_CTRL_SET_Y_RANGE: /* set y range */
@@ -205,6 +208,9 @@ static rt_err_t gt9147_control(struct rt_touch_device *device, int cmd, void *da
         y_ran = *(rt_uint16_t *)data;
         config[6] = (rt_uint8_t)(y_ran >> 8);
         config[5] = (rt_uint8_t)(y_ran & 0xff);
+
+        GT9147_CFG_TBL[4] = config[6];
+        GT9147_CFG_TBL[3] = config[5];
 
         break;
     }
