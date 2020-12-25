@@ -74,7 +74,7 @@ int gt9147_sample(const char *name, rt_uint16_t x, rt_uint16_t y)
         return -1;
     }
 
-    id = rt_malloc(sizeof(rt_uint8_t) * 8);
+    id = rt_malloc(sizeof(struct rt_touch_info));
     rt_device_control(dev, RT_TOUCH_CTRL_GET_ID, id);
     rt_uint8_t * read_id = (rt_uint8_t *)id;
     rt_kprintf("id = %d %d %d %d \n", read_id[0] - '0', read_id[1] - '0', read_id[2] - '0', read_id[3] - '0');
@@ -86,14 +86,15 @@ int gt9147_sample(const char *name, rt_uint16_t x, rt_uint16_t y)
     rt_kprintf("range_y = %d \n", (*(struct rt_touch_info*)id).range_y);
     rt_kprintf("point_num = %d \n", (*(struct rt_touch_info*)id).point_num);
     rt_free(id);
-    rt_device_set_rx_indicate(dev, rx_callback);
-    gt9147_sem = rt_sem_create("dsem", 0, RT_IPC_FLAG_FIFO);
 
+    gt9147_sem = rt_sem_create("dsem", 0, RT_IPC_FLAG_FIFO);
     if (gt9147_sem == RT_NULL)
     {
         rt_kprintf("create dynamic semaphore failed.\n");
         return -1;
     }
+
+    rt_device_set_rx_indicate(dev, rx_callback);
 
     gt9147_thread = rt_thread_create("thread1",
                                      gt9147_entry,
