@@ -10,6 +10,7 @@
 
 #include <rtthread.h>
 #include <rtdevice.h>
+#include <board.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -24,7 +25,7 @@
 static struct rt_i2c_client *gt9147_client;
 
 /* hardware section */
-static const rt_uint8_t GT9147_CFG_TBL[] =
+static rt_uint8_t GT9147_CFG_TBL[] =
 {
     0X00, 0XE0, 0X01, 0X10, 0X01, 0X05, 0X3C, 0X00, 0X02, 0X08,
     0X1E, 0X08, 0X50, 0X3C, 0X0F, 0X05, 0X00, 0X00, 0XFF, 0X67,
@@ -237,6 +238,8 @@ static rt_err_t gt9147_control(struct rt_touch_device *device, int cmd, void *da
         break;
     }
     }
+
+    memcpy(GT9147_CFG_TBL, &config[2], sizeof(GT9147_CFG_TBL));
 
     if (gt9147_write_reg(gt9147_client, sizeof(GT9147_CFG_TBL) + GTP_ADDR_LENGTH, config) != RT_EOK)  /* send config */
     {
