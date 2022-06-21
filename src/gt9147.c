@@ -10,6 +10,7 @@
 
 #include <rtthread.h>
 #include <rtdevice.h>
+#include <board.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -243,6 +244,8 @@ static rt_err_t gt9147_control(struct rt_touch_device *device, int cmd, void *da
         break;
     }
     }
+
+    memcpy(GT9147_CFG_TBL, &config[2], sizeof(GT9147_CFG_TBL));
 
     if (gt9147_write_reg(gt9147_client, sizeof(GT9147_CFG_TBL) + GTP_ADDR_LENGTH, config) != RT_EOK)  /* send config */
     {
